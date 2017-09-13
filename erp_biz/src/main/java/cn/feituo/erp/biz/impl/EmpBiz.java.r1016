@@ -1,0 +1,239 @@
+package cn.feituo.erp.biz.impl;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.shiro.crypto.hash.Md5Hash;
+import org.springframework.cache.CacheManager;
+
+import cn.feituo.erp.biz.IEmpBiz;
+import cn.feituo.erp.dao.IDepDao;
+import cn.feituo.erp.dao.IEmpDao;
+import cn.feituo.erp.dao.IRoleDao;
+import cn.feituo.erp.entity.Dep;
+import cn.feituo.erp.entity.Emp;
+import cn.feituo.erp.entity.Role;
+import cn.feituo.erp.entity.Tree;
+import cn.feituo.erp.exception.ErpException;
+import cn.feituo.erp.util.ExportUtil;
+import redis.clients.jedis.Jedis;
+/**
+ * 员工业务逻辑类
+ * @author Administrator
+ *
+ */
+public class EmpBiz extends BaseBiz<Emp> implements IEmpBiz {
+
+	private IEmpDao empDao;
+	private CacheManager cacheManager;
+	private IRoleDao roleDao;
+	private Jedis jedis;
+	private IDepDao depDao;
+	
+	
+	public void setDepDao(IDepDao depDao) {
+		this.depDao = depDao;
+	}
+
+	public void setEmpDao(IEmpDao empDao) {
+		this.empDao = empDao;
+		super.setBaseDao(this.empDao);
+	}
+
+	@Override
+	public Emp findByUsernameAndPwd(String username, String pwd) {
+		//1： source 要加密的字符串
+		//2: salt 盐, 扰乱码
+		//3: 散列次数
+		//Md5Hash md5 = new Md5Hash(pwd, username, 2);
+		String encryptedPwd = encrypt(pwd,username);//md5.toString();
+//		System.out.println(encryptedPwd);
+		return empDao.findByUsernameAndPwd(username, encryptedPwd);
+	}
+
+	@Override
+	public void updatePwd(String newPwd, String oldPwd, Long uuid) {
+		//验证旧密码是否正确
+		Emp emp = empDao.get(uuid);
+		//加密旧密码
+		String encryptedOldPwd = encrypt(oldPwd,emp.getUsername());
+		if(!emp.getPwd().equals(encryptedOldPwd)){
+			throw new ErpException("原密码不正确");
+		}
+		//emp.setPwd(pwd);
+		//加密新密码
+		String encryptedNewPwd = encrypt(newPwd,emp.getUsername());
+		//修改密码		
+		empDao.updatePwd(encryptedNewPwd, uuid);
+	}
+	
+	private String encrypt(String pwd, String username){
+		Md5Hash md5 = new Md5Hash(pwd, username, 2);
+		return md5.toString();
+	}
+
+	@Override
+	public void updatePwd_reset(String newPwd, Long uuid) {
+		Emp emp = empDao.get(uuid);
+		empDao.updatePwd(encrypt(newPwd,emp.getUsername()), uuid);
+	}
+	
+	@Override
+	public void add(Emp emp){
+		//取出登陆名，用登陆名做为默认密码
+		String username = emp.getUsername();
+		//密码加密后才能存入数据库
+		String encryptedPwd = encrypt(username, username);
+		//设置初始化密码
+		emp.setPwd(encryptedPwd);
+		empDao.add(emp);
+	}
+	
+	@Override
+	public void update(Emp e){
+		//把缓存中的员工名称删除
+		cacheManager.getCache("myCache").evict("emp_" + e.getUuid());
+		empDao.update(e);
+	}
+
+	@Override
+	public List<Tree> readEmpRole(Long uuid) {
+		Emp emp = empDao.get(uuid);
+		//员式下的角色
+		List<Role> empRoles = emp.getRoles();
+		//取出所有的角色
+		List<Role> roleList = roleDao.getList(null, null, null);
+		Tree tree = null;
+		List<Tree> treeList = new ArrayList<Tree>();
+		for(Role r : roleList){
+			tree = new Tree();
+			tree.setId(r.getUuid() + "");//角色编号
+			tree.setText(r.getName());//角色名称
+			if(empRoles.contains(r)){
+				//如果员工有这个角色，就让它选中
+				tree.setChecked(true);
+			}
+			treeList.add(tree);
+		}
+		return treeList;
+	}
+
+	@Override
+	public void updateEmpRole(Long uuid, String checkedIds) {
+		//员工进入持久化状态
+		Emp emp = empDao.get(uuid);
+		//清除员工下的角色
+		emp.setRoles(new ArrayList<Role>());
+		//得到选中的角色编号数组
+		String[] ids = checkedIds.split(",");
+		for(String id : ids){
+			//给员工设置角色
+			emp.getRoles().add(roleDao.get(Long.valueOf(id)));
+		}
+		
+		//清除该员工的菜单缓存
+		jedis.del("team05_menuList_" + uuid);
+		
+	}
+	
+	/**导入表格
+	 * @param is
+	 * @throws Exception 
+	 */
+	@Override
+	public void doImport(InputStream is) throws Exception{
+		HSSFWorkbook  book = new HSSFWorkbook(is);
+		HSSFSheet sheet = book.getSheetAt(0);
+		//获得总共的行数
+		int lastRowNum = sheet.getLastRowNum();
+		
+		List<Dep> list = depDao.getList(null, null, null);
+		for(int i=2;i<lastRowNum;i++){
+			Emp emp  = new Emp();
+			emp.setUsername(sheet.getRow(i).getCell(0).getStringCellValue());
+			emp.setName(sheet.getRow(i).getCell(1).getStringCellValue());
+			
+			List<Emp> list2 = empDao.getList(null, emp, null);
+			if(list2.size()>0){
+				emp = list2.get(0);
+			}
+			if("女".equals(sheet.getRow(i).getCell(2).getStringCellValue())){
+				emp.setGender(0L);
+			}else emp.setGender(1L);
+			emp.setEmail(sheet.getRow(i).getCell(3).getStringCellValue());
+			emp.setAddress(sheet.getRow(i).getCell(5).getStringCellValue());
+			//emp.setTele(sheet.getRow(i).getCell(4).getStringCellValue());
+			//电话
+			int cellType = sheet.getRow(i).getCell(4).getCellType();
+			if(cellType == 1){
+				String tele = sheet.getRow(i).getCell(4).getStringCellValue();
+				emp.setTele(tele);
+			}
+			if(cellType == 0){
+				String tele = (int)sheet.getRow(i).getCell(4).getNumericCellValue()+"";
+				emp.setTele(tele);
+			}
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			emp.setBirthday(sdf.parse(sheet.getRow(i).getCell(6).getStringCellValue()));
+			for (Dep dep : list) {
+				if(dep.getName().equals(sheet.getRow(i).getCell(7).getStringCellValue())){
+					emp.setDep(dep);
+					break;
+				}
+			}
+			if(emp.getDep()==null){
+				throw new ErpException(emp.getName()+"部门输入有误");
+			}
+			if(list2.size()==0){
+				//设置初始化密码
+				String encryptedPwd = encrypt(emp.getUsername(),emp.getUsername());
+				emp.setPwd(encryptedPwd);
+				empDao.add(emp);
+			}
+		
+		}
+		book.close();
+	}
+	
+	//导出表格
+	@Override
+	public void export(OutputStream os,Emp t1) throws Exception {
+		//得到符合条件的员工
+		List<Emp> emplist = empDao.getList(t1,null, null);
+		List<Emp>list = new ArrayList<Emp>();
+		list.addAll(emplist);
+		Map<String, Object> model = ExportUtil.getModel();
+		//处理生日和性别
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		model.put("sdf",sdf);//输入格式转换器
+		for (Emp emp : list) {
+			if(emp.getGender()==0){
+				emp.setGenderTrans("女");
+			}else
+				emp.setGenderTrans("男");
+		}
+		HSSFWorkbook workbook = ExportUtil.export(list, "emp.xls", "员工表");
+		workbook.write(os);
+		workbook.close();
+		
+	}
+
+
+	public void setCacheManager(CacheManager cacheManager) {
+		this.cacheManager = cacheManager;
+	}
+
+	public void setRoleDao(IRoleDao roleDao) {
+		this.roleDao = roleDao;
+	}
+
+	public void setJedis(Jedis jedis) {
+		this.jedis = jedis;
+	}
+	
+}

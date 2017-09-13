@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta name="description" content="Awesome Bubble Navigation with jQuery" />
+	<meta name="keywords" content="jquery, circular menu, navigation, round, bubble"/>
+	
+    <title>管理系统</title>
+    <link href="css/default.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="adminjs/themes/default/easyui.css" />
+    <link rel="stylesheet" type="text/css" href="adminjs/themes/icon.css" />
+    <script type="text/javascript" src="adminjs/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="adminjs/jquery.easyui.1.2.6.min.js"></script>
+	<script type="text/javascript" src='adminjs/index.js'> </script>
+	<link rel="stylesheet" href="css/style.css" type="text/css" media="screen"/>
+	<script type="text/javascript" src="ui/date.js"></script>
+	<script type="text/javascript" src='js/websocketwork.js'> </script>
+	<style>
+		* { margin:0; padding:0; }
+		body { font-family:Arial; background:#fff url(images/bg.png) no-repeat top left; }
+		.title { width:1200px; height:809px; position:absolute; top:30px; left:10px; background:transparent url(123.png) no-repeat top left; }
+		a.back { background:transparent url(back.png) no-repeat top left; position:fixed; width:150px; height:27px; outline:none; bottom:0px; left:0px; }
+		#content { margin:0 auto; }
+	</style>
+	<script type="text/javascript" src="adminjs/jquery.easing.1.3.js"></script>
+	
+	<script type="text/javascript">
+            $(function() {
+                $('#nav > div').hover(
+                function () {
+                    var $this = $(this);
+                    $this.find('img').stop().animate({
+                        'width'     :'199px',
+                        'height'    :'199px',
+                        'top'       :'-25px',
+                        'left'      :'-25px',
+                        'opacity'   :'1.0'
+                    },500,'easeOutBack',function(){
+                        $(this).parent().find('ul').fadeIn(700);
+                    });
+
+
+                    $this.find('a:first,h2').addClass('active');
+                },
+                function () {
+                    var $this = $(this);
+                    $this.find('ul').fadeOut(500);
+                    $this.find('img').stop().animate({
+                        'width'     :'52px',
+                        'height'    :'52px',
+                        'top'       :'0px',
+                        'left'      :'0px',
+                        'opacity'   :'0.1'
+                    },5000,'easeOutBack');
+
+
+                    $this.find('a:first,h2').removeClass('active');
+                }
+            );
+            });
+        </script>
+</head>
+<body class="easyui-layout" style="overflow-y: hidden"  fit="true"   scroll="no">
+<noscript>
+<div style=" position:absolute; z-index:100000; height:2046px;top:0px;left:0px; width:100%; background:white; text-align:center;">
+    <img src="images/noscript.gif" alt='抱歉，请开启脚本支持！' />
+</div></noscript>
+
+<div id="loading-mask" style="position:absolute;top:0px; left:0px; width:100%; height:100%; background:#D2E0F2; z-index:20000">
+<div id="pageloading" style="position:absolute; top:50%; left:50%; margin:-120px 0px 0px -120px; text-align:center;  border:2px solid #8DB2E3; width:200px; height:40px;  font-size:14px;padding:10px; font-weight:bold; background:#fff; color:#15428B;"> 
+    <img src="images/loading.gif" align="absmiddle" /> 正在加载中,请稍候...</div>
+</div>
+
+    <div region="north" split="true" border="false" style="overflow: hidden; height: 30px;
+        background: url(images/layout-browser-hd-bg.gif) #7f99be repeat-x center 50%;
+        line-height: 20px;color: #fff; font-family: Verdana, 微软雅黑,黑体">
+       <span "><iframe id="fancybox-frame" name="fancybox-frame1501808893945" frameborder="0" scrolling="no" hspace="0"  src="http://i.tianqi.com/index.php?c=code&a=getcode&id=34&h=25&w=280"></iframe></span>
+        <span style="float:right; padding-right:20px;" class="head">
+        <a target="_self" href=tencent://message/?uin=1255105202&Site=1255105202@qq.com&Menu=yes><img border="0" SRC=http://wpa.qq.com/pa?p=1:1255105202:1 alt="有问题点这里交谈"></a>&nbsp;&nbsp;&nbsp;
+            欢迎 <span id="username"></span><input type="hidden" id="loginempuuid"/><a href="#" id="editpass">修改密码</a> <a href="javascript:void(0)" id="loginOut">安全退出</a></span>
+        <span style="padding-left:10px; font-size: 16px; "><img src="images/blocks.gif" width="20" height="20" align="absmiddle" /> 管理系统</span>
+    </div>
+    <div region="south" split="true" style="height: 30px; background: #D2E0F2; ">
+        <div class="footer"></div>
+    </div>
+    <div region="east" split="true" style="width:150px;height:100%" title="用户列表" id="eastuserlist" class="navlist" >
+	</div>
+    <div region="west" split="true"  title="导航菜单" style="width:180px;" id="west">
+			<div id="nav">
+		<!--  导航内容 -->
+				
+			</div>
+
+    </div>
+    <div id="mainPanle" region="center" split="true" style="background: #eee; overflow-y:hidden; background-image: images/123.png">
+        <div id="tabs" class="easyui-tabs"  fit="true" border="false" >
+			<div title="欢迎使用" style="padding:20px;overflow:hidden; color:red; " >
+				<h1 style="font-size:24px;"></h1>
+<h1 style="font-size:24px;"></h1>
+<h1 style="font-size:24px;"></h1>
+				<h1 style="font-size:24px;"></h1>
+				<div id="content">
+  <div class="title"></div>
+  <div class="navigation" id="nav">
+    <div class="item user"> <img src="images/bg_user.png" alt="" width="199" height="199" class="circle"/> <a href="#" class="icon"></a>
+      <h2>人事管理</h2>
+      <ul>
+        <li><a href="#" onclick="addTab('员工','/erp/emp.html')">员工</a></li>
+        <li><a href="#" onclick="addTab('部门','/erp/dep.html')">部门</a></li>
+        <li><a href="#" onclick="addTab('重置密码','/erp/pwd.html')">重置密码</a></li>
+      </ul>
+    </div>
+    <div class="item home"> <img src="images/bg_home.png" alt="" width="199" height="199" class="circle"/> <a href="#" class="icon"></a>
+      <h2>仓库管理</h2>
+      <ul>
+        <li><a href="#" onclick="addTab('库存查询','/erp/storedetail.html')">库存查询</a></li>
+        <li><a href="#" onclick="addTab('变更记录','/erp/storeoper.html')">变更记录</a></li>
+        <li><a href="#" onclick="addTab('盈亏查询','/erp/inventory.html?type=1')">盈亏查询</a></li>
+      </ul>
+    </div>
+    <div class="item shop"> <img src="images/bg_shop.png" alt="" width="199" height="199" class="circle"/> <a href="#" class="icon"></a>
+      <h2>采购管理</h2>
+      <ul>
+        <li><a href="#" onclick="addTab('供应商','/erp/supplier.html?type=1')">供应商</a></li>
+        <li><a href="#" onclick="addTab('采购订单查询','/erp/orders.html?oper=orders&type=1')">订单查询</a></li>
+        <li><a href="#" onclick="addTab('采购订单申请','/erp/orders.html?oper=myorders&type=1')">订单申请</a></li>
+      </ul>
+    </div>
+    <div class="item camera"> <img src="images/bg_camera.png" alt="" width="199" height="199" class="circle"/> <a href="#" class="icon"></a>
+      <h2>销售管理</h2>
+      <ul>
+        <li><a href="#" onclick="addTab('客户','/erp/supplier.html?type=2')">客户</a></li>
+        <li><a href="#" onclick="addTab('销售订单查询','/erp/orders.html?oper=orders&type=2')">订单查询</a></li>
+        <li><a href="#" onclick="addTab('销售订单录入','/erp/orders.html?oper=myorders&type=2')">订单录入</a></li>
+      </ul>
+    </div>
+    <div class="item fav"> <img src="images/bg_fav.png" alt="" width="199" height="199" class="circle"/> <a href="#" class="icon"></a>
+      <h2>权限管理</h2>
+      <ul>
+        <li><a href="#" onclick="addTab('职位管理','/erp/role.html')">职位管理</a></li>
+        <li><a href="#" onclick="addTab('员工职位设置','/erp/empRoleSet.html')">员工职位设置</a></li>
+        <li><a href="#" onclick="addTab('职位权限设置','/erp/roleMenuSet.html')">职位权限设置</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+			</div>
+		</div>
+    </div>
+    
+    <!--修改密码窗口-->
+	<div id="w" class="easyui-dialog">
+	    <div class="easyui-layout" fit="true">
+	        <div region="center" border="false" style="padding: 10px; background: #fff;">
+	            <table cellpadding=3>
+	                <tr>
+	                    <td>旧密码：</td>
+	                    <td><input id="txtOldPass" type="password" class="txt01" /></td>
+	                </tr>
+	                <tr>
+	                    <td>新密码：</td>
+	                    <td><input id="txtNewPass" type="password" class="txt01" /></td>
+	                </tr>
+	                <tr>
+	                    <td>确认密码：</td>
+	                    <td><input id="txtRePass" type="password" class="txt01" /></td>
+	                </tr>
+	            </table>
+	        </div>
+	    </div>
+	</div>
+
+	<div id="mm" class="easyui-menu" style="width:150px;">
+		<div id="tabupdate">刷新</div>
+		<div class="menu-sep"></div>
+		<div id="close">关闭</div>
+		<div id="closeall">全部关闭</div>
+		<div id="closeother">除此之外全部关闭</div>
+		<div class="menu-sep"></div>
+		<div id="closeright">当前页右侧全部关闭</div>
+		<div id="closeleft">当前页左侧全部关闭</div>
+		<div class="menu-sep"></div>
+		<div id="exit">退出</div>
+	</div>
+
+</body>
+</html>

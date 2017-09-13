@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>销量分布</title>
+<link rel="stylesheet" type="text/css" href="ui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="ui/themes/icon.css">
+<script type="text/javascript" src="ui/jquery.min.js"></script>
+<script type="text/javascript" src="ui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="ui/locale/easyui-lang-zh_CN.js"></script>
+<script type="text/javascript" src="ui/jquery.serializejson.min.js"></script>
+<script type="text/javascript" src="ui/echarts.min.js"></script>
+<script type="text/javascript" src="ui/china.js"></script>
+<script type="text/javascript" src="js/report_distribute.js"></script>
+</head>
+<body class="easyui-layout">
+<div style="padding:4px;background-color:#eee" data-options="region:'center',title:'全国销售分布表',split:true">
+	<div style="height:2px;"></div>
+		<form id="searchForm">
+			年份：<input id="yearid" name="year" class="easyui-combobox" data-options="
+			editable:false, 
+			url:'json/year_data.json', 
+		    valueField:'key',    
+   			textField:'key'" >
+			<button type="button" id="btnSearch">查询</button>
+		</form>
+	<div style="height:2px;"></div>
+	<table id="grid"></table>
+</div>
+<div  data-options="region:'east',title:'全国销量分布图',split:true" style="width:800px"  >
+	<div id="charts" style="height:80%;width:720px;padding: 30px"></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Highcharts Example</title>
+<link rel="stylesheet" type="text/css" href="ui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="ui/themes/icon.css">
+<script type="text/javascript" src="ui/jquery.min.js"></script>
+<script type="text/javascript" src="ui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="ui/locale/easyui-lang-zh_CN.js"></script>
+<script type="text/javascript" src="ui/jquery.serializejson.min.js"></script>
+<script type="text/javascript" src="js/date.js"></script>
+<script type="text/javascript" src="js/year.json"></script>
+<script type="text/javascript" src="ui/highcharts.js"></script>
+<script src="ui/highcharts-3d.js"></script>
+<script type="text/javascript" src="js/return_trend.js"></script>
+		<style type="text/css">
+#container, #sliders {
+	min-width: 310px; 
+	max-width: 800px;
+	margin: 0 auto;
+}
+#container {
+	height: 400px; 
+}
+</style>
+</head>
+<body class="easyui-layout">
+<div  data-options="region:'center',title:'销售退货金额统计表'" style="padding:4px;background-color:#eee" >
+<div style="padding-left:4px;"></div>
+	<div style="height:2px;"></div>
+	<form id="searchForm">
+		年份:<input name="year" id="year" class="easyui-combobox" data-options="
+			url:'ui/year.json',valueField:'year',textField:'year'
+		"> 
+		<button type="button" id="btnSearch">查询</button>
+	</form>
+	<div style="height:2px;"></div>
+	<table id="reportTrendGrid"></table>
+	<table id="orderTrendGrid"></table>
+</div>	
+<div data-options="region:'east',title:'销售退货趋势图',split:true" style="width:700px;">
+<div id="trendChart"></div>
+<div id="container"></div>
+</div>
+</body>
+</html>
